@@ -42,6 +42,7 @@ class OdooClient {
     }
   }
 
+  //Leer contactos de odoo
   Future<List<dynamic>> searchRead(
       String model, List<dynamic> domain, List<String> fields,
       {int limit = 800}) async {
@@ -79,6 +80,42 @@ class OdooClient {
       } else {
         throw Exception('Error en la respuesta: ${result['error']['message']}');
       }
+    } else {
+      throw Exception('Error de conexión: ${response.statusCode}');
+    }
+  }
+
+  //Crear un contacto en odoo
+  Future<int?> createContact(Map<String, dynamic> values) async {
+    if (uid == null) {
+      throw Exception('Usuario no autenticado');
+    }
+
+    final response = await http.post(
+      Uri.parse('$url/jsonrpc'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'jsonrpc': '2.0',
+        'method': 'call',
+        'params': {
+          'service': 'object',
+          'method': 'execute_kw',
+          'args': [
+            db,
+            uid,
+            password,
+            'res.partner',
+            'create',
+            [values],
+          ],
+        },
+        'id': 3,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> result = json.decode(response.body);
+      return result['result'];
     } else {
       throw Exception('Error de conexión: ${response.statusCode}');
     }

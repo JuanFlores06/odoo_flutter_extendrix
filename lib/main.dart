@@ -1,73 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:odoo_flutter_extendrix/odoo_client.dart';
+import 'package:odoo_flutter_extendrix/new_contact_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final odooClient = OdooClient(
-    url: 'http://10.0.2.2:8069', // Cambia la URL según tu configuración
+    url: 'http://10.0.2.2:8069',
     db: 'o16_com',
     username: 'default',
     password: '12345678',
   );
 
-  try {
-    await odooClient.authenticate();
+  await odooClient.authenticate();
 
-    // Leer contactos
-    final partners = await odooClient
-        .searchRead('res.partner', [], ['name', 'country_id', 'comment']);
-
-    runApp(MyApp(partners: partners));
-  } catch (e) {
-    print(e);
-    runApp(MyApp(
-        partners: [])); // Ejecuta la app con una lista vacía en caso de error
-  }
+  runApp(MyApp(odooClient: odooClient));
 }
 
 class MyApp extends StatelessWidget {
-  final List<dynamic> partners;
+  final OdooClient odooClient;
 
-  MyApp({required this.partners});
+  MyApp({required this.odooClient});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: ContactsScreen(partners: partners),
+      home: ContactListScreen(odooClient: odooClient),
     );
   }
 }
 
-class ContactsScreen extends StatelessWidget {
-  final List<dynamic> partners;
+class ContactListScreen extends StatefulWidget {
+  final OdooClient odooClient;
 
-  ContactsScreen({required this.partners});
+  ContactListScreen({required this.odooClient});
+
+  @override
+  _ContactListScreenState createState() => _ContactListScreenState();
+}
+
+class _ContactListScreenState extends State<ContactListScreen> {
+  List<dynamic> contacts = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchContacts();
+  }
+
+  Future<void> _fetchContacts() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final data = await widget.odooClient
+          .searchRead('res.partner', [], ['name', 'phone', 'comment']);
+      setState(() {
+        contacts = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error al obtener contactos: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _navigateToNewContactScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewContactScreen(odooClient: widget.odooClient),
+      ),
+    );
+    _fetchContacts(); // Actualiza la lista de contactos al volver
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Contactos de Odoo'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: _navigateToNewContactScreen,
+          ),
+        ],
       ),
-      body: ListView.builder(
-        itemCount: partners.length,
-        itemBuilder: (context, index) {
-          final partner = partners[index];
-          final name = partner['name'] ?? 'No Name';
-          final country = partner['country_id'] != null
-              ? partner['country_id'][1]
-              : 'Unknown';
-          final comment = partner['comment'] ?? 'No Comment';
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: contacts.length,
+              itemBuilder: (context, index) {
+                final contact = contacts[index];
+                final name = contact['name'] ?? 'Sin Nombre';
+                final phone = contact['phone']?.toString() ?? 'Sin Teléfono';
+                final hasComment = contact['comment']; //!= null;
 
-          return ListTile(
-            title: Text(name),
-            subtitle: Text('Country: $country\nComment: $comment'),
-            contentPadding: EdgeInsets.all(8.0),
-            isThreeLine: true,
-          );
-        },
-      ),
+                return Card(
+                  margin: EdgeInsets.all(8.0),
+                  child: ListTile(
+                    title: Text(name),
+                    subtitle: Text(phone),
+                    trailing:
+                        hasComment ? Icon(Icons.check) : SizedBox.shrink(),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
