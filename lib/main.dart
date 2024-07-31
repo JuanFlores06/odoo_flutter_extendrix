@@ -85,6 +85,10 @@ class _ContactListScreenState extends State<ContactListScreen> {
         title: Text('Contactos de Odoo'),
         actions: [
           IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _fetchContacts,
+          ),
+          IconButton(
             icon: Icon(Icons.add),
             onPressed: _navigateToNewContactScreen,
           ),
