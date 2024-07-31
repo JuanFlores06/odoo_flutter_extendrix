@@ -120,4 +120,45 @@ class OdooClient {
       throw Exception('Error de conexión: ${response.statusCode}');
     }
   }
+
+  //Actualizar contacto
+  Future<void> updateContact(int id, Map<String, dynamic> values) async {
+    if (uid == null) {
+      throw Exception('Usuario no autenticado');
+    }
+
+    final response = await http.post(
+      Uri.parse('$url/jsonrpc'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'jsonrpc': '2.0',
+        'method': 'call',
+        'params': {
+          'service': 'object',
+          'method': 'execute_kw',
+          'args': [
+            db,
+            uid,
+            password,
+            'res.partner',
+            'write',
+            [
+              [id],
+              values
+            ],
+          ],
+        },
+        'id': 3,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error de conexión: ${response.statusCode}');
+    }
+
+    final Map<String, dynamic> result = json.decode(response.body);
+    if (result['error'] != null) {
+      throw Exception('Error en la respuesta: ${result['error']['message']}');
+    }
+  }
 }

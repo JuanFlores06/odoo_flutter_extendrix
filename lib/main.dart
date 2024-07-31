@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:odoo_flutter_extendrix/odoo_client.dart';
 import 'package:odoo_flutter_extendrix/new_contact_screen.dart';
+import 'package:odoo_flutter_extendrix/edit_contact_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +79,19 @@ class _ContactListScreenState extends State<ContactListScreen> {
     _fetchContacts(); // Actualiza la lista de contactos al volver
   }
 
+  Future<void> _navigateToEditContactScreen(int id) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditContactScreen(
+          odooClient: widget.odooClient,
+          contactId: id,
+        ),
+      ),
+    );
+    _fetchContacts(); // Actualiza la lista de contactos al volver
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,6 +114,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
               itemCount: contacts.length,
               itemBuilder: (context, index) {
                 final contact = contacts[index];
+                final id = contact['id'];
                 final name = contact['name'] ?? 'Sin Nombre';
                 final phone = contact['phone']?.toString() ?? 'Sin Teléfono';
                 final hasComment = contact['comment']; //!= null;
@@ -109,8 +124,16 @@ class _ContactListScreenState extends State<ContactListScreen> {
                   child: ListTile(
                     title: Text(name),
                     subtitle: Text(phone),
-                    trailing:
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () => _navigateToEditContactScreen(id),
+                        ),
                         hasComment ? Icon(Icons.check) : SizedBox.shrink(),
+                      ],
+                    ),
                   ),
                 );
               },
