@@ -11,6 +11,10 @@ void main() async {
     db: 'o16_com',
     username: 'default',
     password: '12345678',
+    // url: 'https://omnia.extendrix.com:18169/jsonrpc',
+    //db: 'omnia_testing',
+    //username: 'support@extendrix.com',
+    //password: '3xt3ndr1x@',
   );
 
   await odooClient.authenticate();
@@ -69,6 +73,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
     }
   }
 
+  //Metodo para navegar a crear contacto
   Future<void> _navigateToNewContactScreen() async {
     await Navigator.push(
       context,
@@ -79,6 +84,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
     _fetchContacts(); // Actualiza la lista de contactos al volver
   }
 
+  //Metodo para navegar a editar contacto
   Future<void> _navigateToEditContactScreen(int id) async {
     await Navigator.push(
       context,
@@ -92,6 +98,53 @@ class _ContactListScreenState extends State<ContactListScreen> {
     _fetchContacts(); // Actualiza la lista de contactos al volver
   }
 
+  Future<void> _confirmDeleteContact(int contactId) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmar eliminación'),
+          content: Text('¿Estás seguro de que deseas eliminar este contacto?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(false); // Regresa false al cancelar
+              },
+            ),
+            TextButton(
+              child: Text('Eliminar'),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Regresa true al confirmar
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      _deleteContact(contactId);
+    }
+  }
+
+  //Metodo para eliminar contacto
+  Future<void> _deleteContact(int contactId) async {
+    try {
+      await widget.odooClient.deleteContact(contactId);
+      _fetchContacts(); // Actualiza la lista de contactos después de eliminar
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Contacto eliminado con éxito'),
+      ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error al eliminar contacto: $e'),
+      ));
+    }
+    _fetchContacts();
+  }
+
+  //FrontEnd
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,6 +183,10 @@ class _ContactListScreenState extends State<ContactListScreen> {
                         IconButton(
                           icon: Icon(Icons.edit),
                           onPressed: () => _navigateToEditContactScreen(id),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _confirmDeleteContact(contact['id']),
                         ),
                         hasComment ? Icon(Icons.check) : SizedBox.shrink(),
                       ],

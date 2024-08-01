@@ -161,4 +161,45 @@ class OdooClient {
       throw Exception('Error en la respuesta: ${result['error']['message']}');
     }
   }
+
+  //Eliminar
+  Future<void> deleteContact(int contactId) async {
+    if (uid == null) {
+      throw Exception('Usuario no autenticado');
+    }
+
+    final response = await http.post(
+      Uri.parse('$url/jsonrpc'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'jsonrpc': '2.0',
+        'method': 'call',
+        'params': {
+          'service': 'object',
+          'method': 'execute_kw',
+          'args': [
+            db,
+            uid,
+            password,
+            'res.partner',
+            'unlink',
+            [
+              [contactId]
+            ],
+          ],
+        },
+        'id': 3,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> result = json.decode(response.body);
+      if (result['result'] != true) {
+        throw Exception(
+            'Error en la eliminación: ${result['error']['message']}');
+      }
+    } else {
+      throw Exception('Error de conexión: ${response.statusCode}');
+    }
+  }
 }
